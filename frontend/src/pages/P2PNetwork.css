@@ -1,0 +1,99 @@
+/* P2PNetwork.css */
+
+/* Note: In a React app, you might want to remove the 'html, body' 
+  selectors if this component doesn't take up the full page, 
+  or move the background styles to a specific container class.
+*/
+:root {
+  --bg: #06070b;
+  --panel: rgba(255, 255, 255, 0.02);
+  --line: rgba(200, 230, 255, 0.12);
+  --accent-glow: rgba(200, 240, 255, 0.28);
+}
+
+.p2p-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  overflow: hidden;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  background: hsla(213, 52%, 8%, 1);
+  background: radial-gradient(
+    circle,
+    hsla(213, 52%, 8%, 1) 0%,
+    hsla(228, 56%, 2%, 1) 100%
+  );
+}
+
+canvas.p2p-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.24);
+  padding: 8px 10px;
+  border-radius: 10px;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 18px;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 13px;
+  background: rgba(0, 0, 0, 0.18);
+  padding: 8px 12px;
+  border-radius: 999px;
+  pointer-events: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Preserved from original CSS, though not used in the main view */
+.liquid-glass {
+  width: 200px;
+  height: 200px;
+  border-radius: 80px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  background-image: radial-gradient(
+    circle at top left,
+    rgba(255, 255, 255, 0.35),
+    transparent 60%
+  );
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 -10px 25px rgba(0, 0, 0, 0.15),
+    inset 0 0 20px rgba(255, 255, 255, 0.15);
+}
+
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(
+    -45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.45),
+    transparent 60%
+  );
+  transform: rotate(-10deg);
+  pointer-events: none;
+}

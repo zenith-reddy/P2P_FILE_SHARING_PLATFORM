@@ -1,23 +1,119 @@
-.app-container {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: relative;
-  overflow: hidden;
+/* App.css - orchestrates layering between P2PNetwork and SessionCreate */
+
+:root{
+  --glass-bg: rgba(16,24,40,0.55);
+  --glass-border: rgba(255,255,255,0.06);
+  --ghost-opacity: 0.55;
+  --card-width: 420px;
+  --card-radius: 16px;
 }
 
-/* Optional: Add a subtle grid or dots to match the 'network' vibe */
-.app-container::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
+/* App container keeps a single stacking context */
+.app-container{
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* --- P2PNetwork (background) --- */
+/* p2p-container class comes from P2PNetwork.css — override to make full-screen background */
+.p2p-container {
+  position: fixed;     /* make it the visual background */
+  inset: 0;            /* top:0; right:0; bottom:0; left:0; */
   width: 100%;
   height: 100%;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
-  background-size: 40px 40px;
-  opacity: 0.3;
-  z-index: -1;
+  z-index: 0;          /* bottom-most layer */
+  pointer-events: auto; /* canvas still receives clicks */
+}
+
+/* Keep canvas filling the parent */
+.p2p-container .p2p-canvas,
+canvas.p2p-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- SessionCreate wrapper (full-screen, but mostly transparent to clicks) --- */
+.session-page-wrapper {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3;            /* top layer: actual interactive card */
+  pointer-events: none;  /* let clicks pass to canvas except on the card itself */
+}
+
+/* The "ghost" background copy of the Session card.
+   This element sits above the P2P background (z-index: 1) and below the interactive card (z-index: 3). */
+.session-page-wrapper::before {
+  content: "";
+  position: absolute;
+  z-index: 1;  /* sits above the p2p canvas (z:0) but below the real card (z:3) */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(var(--card-width) * 1.6);
+  max-width: calc(100% - 48px);
+  height: calc(520px);
+  border-radius: calc(var(--card-radius) * 1.2);
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.28));
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 30px 80px rgba(6,8,12,0.6), inset 0 0 40px rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  filter: blur(20px);
+  opacity: var(--ghost-opacity);
+  pointer-events: none;
+  transition: opacity .25s ease, transform .25s ease;
+  /* subtle tilt/offset so it doesn't perfectly match the card and reads as a background layer */
+  transform: translate(-50%, -48%) rotate(-0.6deg);
+}
+
+/* Interactive card — enable pointer events so user can interact */
+.session-card {
+  position: relative;
+  z-index: 4;          /* above the ghost */
+  pointer-events: auto; /* allow clicks on the card */
+  width: var(--card-width);
+  max-width: calc(100% - 32px);
+  margin: 20px;
+  /* keep original styling from SessionCreate.css, but ensure it blends nicely above canvas */
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  backdrop-filter: blur(12px) saturate(140%);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+/* Make sure any absolutely-positioned glow / visual elements inside the session card
+   don't escape the intended stacking order (they can sit behind the card but above P2P). */
+.session-card .glow-effect,
+.session-card .connection-visual {
+  position: absolute;
+  z-index: 2; /* sits between P2P (0) and card surface (4), but inside the card's stacking context */
+}
+
+/* Small responsive tweaks */
+@media (max-width: 720px){
+  .session-page-wrapper::before {
+    width: calc(var(--card-width) * 1.08);
+    height: 460px;
+    transform: translate(-50%, -48%) rotate(-0.4deg);
+    filter: blur(16px);
+  }
+  .session-card {
+    width: calc(var(--card-width) - 60px);
+    padding: 18px;
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .session-page-wrapper::before { transition: none; transform: translate(-50%, -50%); filter: none; }
 }

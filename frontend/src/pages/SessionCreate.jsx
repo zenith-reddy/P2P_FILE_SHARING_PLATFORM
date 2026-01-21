@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import './SessionCreate.css';
+import dummyQR from "../assets/dummyqr200x200.png";
+
 
 const SessionCreate = () => {
   const [sessionUrl, setSessionUrl] = useState('https://securep2p.io/abc123xyz');
@@ -20,6 +22,7 @@ const SessionCreate = () => {
   const shareMail = () => {
     window.location.href = `mailto:?subject=Secure P2P Session&body=Join my secure session here: ${sessionUrl}`;
   };
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="session-page-wrapper">
@@ -54,26 +57,26 @@ const SessionCreate = () => {
           <div className="input-group-wrapper">
             <div className="input-container">
               <LockIcon className="icon-lock" />
-              <input 
-                type="text" 
-                value={sessionUrl} 
-                readOnly 
+              <input
+                type="text"
+                value={sessionUrl}
+                readOnly
                 className="link-input"
               />
             </div>
             <div className="qr-container">
               {/* QR Code Placeholder */}
-              <svg viewBox="0 0 100 100" className="qr-code">
-                  <path d="M0,0 h100 v100 h-100 z" fill="white"/>
-                  <path d="M10,10 h30 v30 h-30 z M50,10 h10 v10 h-10 z M70,10 h20 v20 h-20 z" fill="black"/>
-                  <path d="M10,50 h10 v10 h-10 z M30,50 h20 v40 h-20 z M60,60 h30 v30 h-30 z" fill="black"/>
-                  <path d="M10,70 h30 v20 h-30 z" fill="black"/>
-              </svg>
+              <img
+                src={dummyQR}
+                alt="QR Code"
+                className={`qr-code ${expanded ? "expanded" : ""}`}
+                onClick={() => setExpanded(!expanded)}
+              />
             </div>
           </div>
 
           <div className="center-action">
-               {/* <button className="copy-btn-large" onClick={copyToClipboard} title="Copy to clipboard">
+            {/* <button className="copy-btn-large" onClick={copyToClipboard} title="Copy to clipboard">
                   <CopyIcon />
                </button> */}
           </div>
@@ -95,8 +98,8 @@ const SessionCreate = () => {
 
           <div className="card-footer">
             <div className="footer-status">
-               <LockIconSmall />
-               <span>Speed. Secure. Decentralized</span>
+              <LockIconSmall />
+              <span>Speed. Secure. Decentralized</span>
             </div>
             {/* <span className="sub-footer">No files stored on servers</span> */}
           </div>

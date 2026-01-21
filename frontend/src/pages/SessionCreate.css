@@ -25,13 +25,13 @@ body {
 /* Outer Glow Effects */
 .glow-effect {
   position: absolute;
-  top: 50%;
   width: 150px;
   height: 150px;
   border-radius: 50%;
   filter: blur(60px);
-  z-index: -1;
+  /* z-index: -1; */
   opacity: 0.5;
+  pointer-events: none;
 }
 
 .glow-effect.left {
@@ -146,11 +146,29 @@ body {
   align-items: center;
   justify-content: center;
   margin-left: 8px;
+  z-index: 2;
 }
 
 .qr-code {
   width: 100%;
   height: 100%;
+  cursor: pointer;
+  border-radius: 3%;
+  transition: transform 0.5s ease;
+  z-index: 10;
+  
+  /* border-color: red;  */
+}
+
+.qr-code.expanded {
+  transform: scale(5);
+  border-radius: 3%;
+  z-index: 10;
+}
+
+.qr-wrapper {
+  position: relative;
+  display: inline-block;
 }
 
 /* Center Copy Button */
