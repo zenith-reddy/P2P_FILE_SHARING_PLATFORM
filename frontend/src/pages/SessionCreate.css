@@ -161,9 +161,11 @@ body {
 }
 
 .qr-code.expanded {
-  transform: scale(5);
-  border-radius: 3%;
+  transform: scale(4);
+  border-radius: 4%;
   z-index: 10;
+  border: 2px solid #ffffff;
+  
 }
 
 .qr-wrapper {

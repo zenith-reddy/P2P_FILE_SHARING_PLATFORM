@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>WebSocket Test</title>
+</head>
+<body>
+  <h1>WebSocket Frontend</h1>
+  <pre id="log"></pre>
+
+  <script>
+    const log = (msg) => {
+      document.getElementById("log").textContent += msg + "\n";
+    };
+
+    const ws = new WebSocket("ws://localhost:8080/ws/create");
+
+    ws.onopen = () => {
+      log("✅ connected to /ws/create");
+    };
+
+    ws.onmessage = (event) => {
+      log("📩 server: " + event.data);
+    };
+
+    ws.onerror = (err) => {
+      log("❌ error");
+      console.error(err);
+    };
+
+    ws.onclose = () => {
+      log("🔌 disconnected");
+    };
+  </script>
+</body>
+</html>
