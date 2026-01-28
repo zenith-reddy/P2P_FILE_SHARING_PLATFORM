@@ -33,18 +33,6 @@ export function startWS(server) {
             console.log("received:", msg.toString());
         });
 
-        // for (let a = 0; a < 100; a++) {
-
-        // }
-        // let a=0;
-
-        // while (true) {
-        //     ws.send(JSON.stringify({
-        //         type: "connected",
-        //         message: a
-        //     }));
-        //     a++;
-        // }
 
         ws.send()
 
