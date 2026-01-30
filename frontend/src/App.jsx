@@ -2,39 +2,34 @@ import "./App.css";
 import SessionCreate from "./pages/SessionCreate";
 import FileTransfer from "./pages/FileTransfer";
 import P2PNetwork from "./pages/P2PNetwork";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import LoadingPage from "./pages/LoadingPage"; // Import the new page
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 function App() {
   return (
     <BrowserRouter>
+      {/* P2PNetwork is outside Routes to ensure it remains 
+         rendered as the persistent background across all pages 
+      */}
+      <P2PNetwork />
+      
       <Routes>
         <Route
           path="/"
-          element={
-            <>
-              <SessionCreate />
-              <P2PNetwork />
-            </>
-          }
+          element={<SessionCreate />}
         />
         <Route
-          path="/temp"
-          element={
-            <>
-              <FileTransfer />
-              <P2PNetwork />
-            </>
-          }
+          path="/transfer"
+          element={<FileTransfer />}
         />
         <Route
           path="/:sessid"
-          element={
-            <>
-              <SessionCreate />
-              <P2PNetwork />
-            </>
-          }
+          element={<LoadingPage />}
         />
+        {/* <Route
+          path="/sessid"
+          element={<SessionCreate />}
+        /> */}
       </Routes>
     </BrowserRouter>
   );

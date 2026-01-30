@@ -1,4 +1,4 @@
-/* App.css - orchestrates layering between P2PNetwork, SessionCreate, and FileTransfer */
+/* App.css */
 
 :root{
   --glass-bg: rgba(16,24,40,0.55);
@@ -7,11 +7,10 @@
   
   /* Card Dimensions */
   --card-width: 420px;
-  --transfer-card-width: 900px; /* New variable for the wider transfer card */
+  --transfer-card-width: 900px;
   --card-radius: 16px;
 }
 
-/* App container keeps a single stacking context */
 .app-container{
   position: relative;
   width: 100vw;
@@ -22,17 +21,15 @@
 }
 
 /* --- P2PNetwork (background) --- */
-/* p2p-container class comes from P2PNetwork.css — override to make full-screen background */
 .p2p-container {
-  position: fixed;     /* make it the visual background */
-  inset: 0;            /* top:0; right:0; bottom:0; left:0; */
+  position: fixed;
+  inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 0;          /* bottom-most layer */
-  pointer-events: auto; /* canvas still receives clicks */
+  z-index: 0;
+  pointer-events: auto;
 }
 
-/* Keep canvas filling the parent */
 .p2p-container .p2p-canvas,
 canvas.p2p-canvas {
   display: block;
@@ -42,28 +39,29 @@ canvas.p2p-canvas {
 
 /* =========================================
    WRAPPER SHARED STYLES 
-   (Applies to both Session and Transfer pages)
+   (Now includes Loading Page)
    ========================================= */
 .session-page-wrapper,
-.transfer-page-wrapper {
+.transfer-page-wrapper,
+.loading-page-wrapper {
   position: fixed;
   inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3;            /* top layer: actual interactive card */
-  pointer-events: none;  /* let clicks pass to canvas except on the card itself */
+  z-index: 3;
+  pointer-events: none;
 }
 
 /* =========================================
-   SESSION CREATE SPECIFIC
+   GHOST EFFECTS (Background layers)
    ========================================= */
 
-/* The "ghost" background copy for Session Card */
+/* Session Ghost */
 .session-page-wrapper::before {
   content: "";
   position: absolute;
-  z-index: 1;  /* sits above the p2p canvas (z:0) but below the real card (z:3) */
+  z-index: 1;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
@@ -83,35 +81,7 @@ canvas.p2p-canvas {
   transform: translate(-50%, -48%) rotate(-0.6deg);
 }
 
-/* Interactive Session Card */
-.session-card {
-  position: relative;
-  z-index: 4;          /* above the ghost */
-  pointer-events: auto; /* allow clicks on the card */
-  width: var(--card-width);
-  max-width: calc(100% - 32px);
-  margin: 20px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  border-radius: var(--card-radius);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
-}
-
-/* Internal Session Card Elements */
-.session-card .glow-effect,
-.session-card .connection-visual {
-  position: absolute;
-  z-index: 2; /* sits between P2P (0) and card surface (4), but inside the card's stacking context */
-}
-
-/* =========================================
-   FILE TRANSFER SPECIFIC
-   ========================================= */
-
-/* The "ghost" background copy for Transfer Card 
-   (Needs to be wider and shorter than session ghost) */
+/* Transfer Ghost */
 .transfer-page-wrapper::before {
   content: "";
   position: absolute;
@@ -119,82 +89,74 @@ canvas.p2p-canvas {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  
-  /* Dimensions adjusted for the wider transfer card */
   width: calc(var(--transfer-card-width) + 100px); 
-  height: 640px; /* Slightly taller than the 600px card */
-  
+  height: 640px;
   max-width: calc(100% - 48px);
   border-radius: calc(var(--card-radius) * 1.5);
-  
-  /* Same visual style as session ghost */
   background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.28));
   border: 1px solid var(--glass-border);
   box-shadow: 0 40px 90px rgba(6,8,12,0.7), inset 0 0 40px rgba(255,255,255,0.02);
   backdrop-filter: blur(12px) saturate(140%);
   -webkit-backdrop-filter: blur(12px) saturate(140%);
-  filter: blur(25px); /* Slightly higher blur for larger surface */
+  filter: blur(25px);
   opacity: var(--ghost-opacity);
   pointer-events: none;
-  
-  /* Subtle tilt */
   transform: translate(-50%, -49%) rotate(0.4deg); 
 }
 
-/* Interactive Transfer Card */
-.transfer-card {
-  position: relative;
-  z-index: 4;
-  pointer-events: auto;
-  width: var(--transfer-card-width);
-  max-width: calc(100% - 32px);
-  height: 600px; /* Fixed height for transfer UI */
-  margin: 20px;
-  
-  /* Consistent glass style */
-  background: var(--glass-bg);
+/* Loading Ghost (Small & Centered) */
+.loading-page-wrapper::before {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 360px; 
+  height: 420px;
+  border-radius: 32px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.28));
   border: 1px solid var(--glass-border);
-  border-radius: var(--card-radius);
-  backdrop-filter: blur(12px) saturate(140%);
-  -webkit-backdrop-filter: blur(12px) saturate(140%);
-  box-shadow: 0 20px 50px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.02);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  filter: blur(24px);
+  opacity: 0.4;
+  pointer-events: none;
 }
+
+/* =========================================
+   INTERACTIVE CARDS
+   ========================================= */
+
+.session-card, .transfer-card, .loading-card {
+  pointer-events: auto;
+}
+
+/* (Detailed card styles remain in their individual CSS files) */
 
 /* =========================================
    RESPONSIVE
    ========================================= */
 
 @media (max-width: 720px){
-  /* Session Ghost adjustments */
   .session-page-wrapper::before {
     width: calc(var(--card-width) * 1.08);
     height: 460px;
     transform: translate(-50%, -48%) rotate(-0.4deg);
     filter: blur(16px);
   }
-  .session-card {
-    width: calc(var(--card-width) - 60px);
-    padding: 18px;
-  }
-
-  /* Transfer Ghost adjustments */
   .transfer-page-wrapper::before {
     width: 95%;
     height: 90%;
-    transform: translate(-50%, -50%); /* Remove tilt on mobile */
+    transform: translate(-50%, -50%);
     filter: blur(15px);
-  }
-  .transfer-card {
-    width: 100%;
-    height: auto; /* Allow auto height on mobile if stack changes */
-    min-height: 500px;
-    margin: 10px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .session-page-wrapper::before,
-  .transfer-page-wrapper::before { 
+  .transfer-page-wrapper::before,
+  .loading-page-wrapper::before { 
     transition: none; 
     transform: translate(-50%, -50%); 
     filter: none; 

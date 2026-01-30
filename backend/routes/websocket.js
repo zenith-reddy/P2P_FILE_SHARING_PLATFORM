@@ -9,7 +9,7 @@ function generateSessionId() {
 
 export function startSocket(server) {
     const io = new Server(server, {
-        path: "/ws/create",
+        path: "/ws",
         cors: {
             origin: "*",
             methods: ["GET", "POST"]
