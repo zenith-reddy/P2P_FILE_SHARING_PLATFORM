@@ -33,6 +33,10 @@ useEffect(() => {
         setSessionUrl(data.url);
       }
   })
+  ws.current.on("msgg", (data) => {
+  console.log("ROOM EVENT:", data.msg);
+  console.log("ROOM size:", data.roomsize);
+  });
 
   // ws.current.onopen = () => {
   //   console.log("WS connected");

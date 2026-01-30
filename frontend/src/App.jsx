@@ -8,20 +8,33 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"
+        <Route
+          path="/"
           element={
             <>
               <SessionCreate />
               <P2PNetwork />
             </>
-          }/>
-          <Route path="/temp"
+          }
+        />
+        <Route
+          path="/temp"
           element={
             <>
-              <FileTransfer/>
+              <FileTransfer />
               <P2PNetwork />
-            </>}
-          />
+            </>
+          }
+        />
+        <Route
+          path="/:sessid"
+          element={
+            <>
+              <SessionCreate />
+              <P2PNetwork />
+            </>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

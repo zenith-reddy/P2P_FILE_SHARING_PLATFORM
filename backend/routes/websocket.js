@@ -16,6 +16,11 @@ export function startSocket(server) {
         }
     });
 
+    const getRoomUserCount = (roomName) => {
+      const room = io.sockets.adapter.rooms.get(roomName);
+      return room ? room.size : 0;
+    };
+
     io.on("connection", (socket) => {
 
         // const sessionId = uuidv4();
@@ -34,8 +39,25 @@ export function startSocket(server) {
 
         socket.on("disconnect", (reason) => {
             console.log("WS disconnected:", reason);
+            socket.leave("mfc lauda");
         });
+
+        socket.join("mfc lauda");
+
+        io.to("mfc lauda").emit("msgg", {
+            msg: "hellooo guysssss",
+            roomsize:getRoomUserCount("mfc lauda")
+        });;
+        console.log(socket.rooms);
+        console.log(socket.rooms.size);
+
+
     })
+
+    
+
+
+
 }
 
 
