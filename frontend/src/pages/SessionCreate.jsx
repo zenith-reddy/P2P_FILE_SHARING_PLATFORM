@@ -4,61 +4,57 @@ import dummyQR from "../assets/dummyqr200x200.png";
 import { QRCodeSVG } from "qrcode.react";
 import { io } from "socket.io-client";
 
-
 const SessionCreate = () => {
   const ws = useRef(null); //imp
   const [sessionUrl, setSessionUrl] = useState(null);
 
+  useEffect(() => {
+    ws.current = io("http://localhost:8080", {
+      path: "/ws",
+    });
 
-useEffect(() => {
-  ws.current = io("http://localhost:8080", {
-    path: "/ws/create",
-  });
-  // ws.current.onopen = () => console.log("WS connected");
-  ws.current.on("connect",()=>{
-    console.log("WS connected");
+    ws.current.on("connect", () => {
+      console.log("WS connected");
 
-    ws.current.emit("msgg",{
-      message: "WebSocket /ws/create is alive",
-    })
+      ws.current.emit("msgg", {
+        message: "WebSocket connected",
+      });
 
-  })
+      ws.current.emit("createroom", {
+        message: "room joined",
+      });
+    });
 
-  // ws.current.onmessage = (e) => {
-  //   const data = JSON.parse(e.data);
-  //   if (data.type === "connected") setSessionUrl(data.url);
-  // };
-  ws.current.onAny((event,data)=>{
+    ws.current.onAny((event, data) => {
       if (event === "connected&url") {
         setSessionUrl(data.url);
       }
-  })
-  ws.current.on("msgg", (data) => {
-  console.log("ROOM EVENT:", data.msg);
-  console.log("ROOM size:", data.roomsize);
-  });
-
-  // ws.current.onopen = () => {
-  //   console.log("WS connected");
-
-  //   ws.current.send(
-  //     JSON.stringify({
-  //       type: "connected",
-  //       message: "WebSocket /ws/create is alive",
-  //     }),
-  //   );
-  // };
+    });
+    ws.current.on("msgg", (data) => {
+      console.log(data);
+    });
 
 
-  return () => {
-    ws.current.disconnect();
-  };
-}, []);
+    return () => {
+      ws.current.disconnect();
+    };
+  }, []);
 
+  const [isCopied, setIsCopied] = useState(false);
   const copyToClipboard = () => {
     navigator.clipboard.writeText(sessionUrl);
-    alert("Link copied to clipboard!");
+    setIsCopied(true);
   };
+
+  useEffect(() => {
+    if (isCopied) {
+      const timeout = setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [isCopied]);
 
   const shareWhatsApp = () => {
     window.open(
@@ -88,7 +84,7 @@ useEffect(() => {
         <div className="connection-visual"></div>
 
         <div className="card-content">
-          <h2 className="title">Connect to Peer</h2>
+          <h2 className="title">VELOSYNC</h2>
           <p className="subtitle">Secure peer-to-peer session using WebRTC</p>
 
           <div className="input-group-wrapper">
@@ -99,6 +95,7 @@ useEffect(() => {
                 value={sessionUrl}
                 readOnly
                 className="link-input"
+                placeholder="Generating link..."
               />
             </div>
             <div className="qr-container">
@@ -121,7 +118,7 @@ useEffect(() => {
               <MailIcon /> <span>Mail</span>
             </button>
             <button className="share-btn" onClick={copyToClipboard}>
-              <LinkIcon /> <span>Copy</span>
+              <CopyIcon /> <span>Copy</span>
             </button>
           </div>
 

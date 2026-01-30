@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import {useParams} from "react-router-dom";
+import { useParams } from "react-router-dom";
 import "./LoadingPage.css";
 import { io } from "socket.io-client";
 
@@ -22,11 +22,9 @@ const LoadingPage = () => {
 
   // Simulation of connection steps
   useEffect(() => {
-
     if (!sessid) {
       return;
     }
-
 
     ws.current = io("http://localhost:8080", {
       path: "/ws",
@@ -35,21 +33,19 @@ const LoadingPage = () => {
     ws.current.on("connect", () => {
       console.log("WS connected");
 
-      ws.current.emit("joinroom", {
-        sessionid: sessid,
-      },updateStatus("ICE"));
+      ws.current.emit(
+        "joinroom",
+        {
+          roomid: sessid,
+        },
+        console.log(sessid),
+      );
 
-      ws.current.emit("msgg", { //dev only
-        message: "recevier ready",
-      });
     });
 
-    
-
-
-
-
-    return () => {};
+    return () => {
+      ws.current.disconnect();
+    };
   }, []);
 
   return (

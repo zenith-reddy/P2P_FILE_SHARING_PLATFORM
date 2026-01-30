@@ -14,75 +14,55 @@ export function startSocket(server) {
             origin: "*",
             methods: ["GET", "POST"]
         }
-
-
     });
 
     const getRoomUserCount = (roomName) => {
-      const room = io.sockets.adapter.rooms.get(roomName);
-      return room ? room.size : 0;
+        const room = io.sockets.adapter.rooms.get(roomName);
+        return room ? room.size : 0;
     };
 
     io.on("connection", (socket) => {
 
-        // const sessionId = uuidv4();
-        const saveid = generateSessionId();
+        console.log("socket connected:", socket.id);
 
+        socket.on("createroom", () => {
+            const roomid = generateSessionId();
+            socket.join(roomid);
+            socket.roomId = roomid;
+            console.log(`room created: ${roomid}`);
+            const Url = `http://localhost:5173/${roomid}`;
+            socket.emit("connected&url", {
+                url: Url,
+                message: "Room created successfully"
+            })
 
-        const Url = `https://securep2p.io/${saveid}`;
+            socket.emit("msgg", {
+                msg: "hellooo guysssss",
+                roomsize: getRoomUserCount(socket.roomId),
+                sessionid: socket.roomId
+            });
 
-        socket.emit("connected&url", {
-            url: Url,
-            message: "WebSocket /ws/create is alive"
-        })
-      socket.on("create-room",()=> {
-    const roomid =  generateSessionId();
-     socket.join(roomid);
-     socket.emit("room created",roomid);
+        });
 
-    console.log(`room created: ${roomid}`);
-   
+        socket.on("joinroom", ({ roomid }) => {
+            if (!roomid) return;
 
-      })
+            socket.join(roomid);
+            socket.roomId = roomid;
 
-      socket.on("join-room",({roomid})=>{
-if(!roomid) return ;
-socket.join(roomid);
-socket.to(roomid).emit("peer connected",{peerId: socket.id})
-console.log(`room joined: ${roomid}`);
+            socket.to(roomid).emit("msgg", { peerId: socket.id })
+            console.log(`room joined: ${roomid}`);
 
-
-
-      });
-
-        socket.on("msgg", (data) => {
-            console.log("received:", data);
+            socket.emit("msgg", {
+                msg: "hellooo guysssss",
+                roomsize: getRoomUserCount(socket.roomId),
+                sessionid: socket.roomId
+            });
         });
 
         socket.on("disconnect", (reason) => {
             console.log("WS disconnected:", reason);
-            socket.leave(saveid);
+            socket.leave(socket.roomId);
         });
-        socket.join(saveid);
-
-       socket.emit("msgg", {
-            msg: "hellooo guysssss",
-            roomsize:getRoomUserCount(saveid),
-            sessionid:saveid
-        });;
-        console.log(socket.rooms);
-        console.log(socket.rooms.size);
-
-
     })
-
-    
-
-
-
 }
-
-
-
-
-
