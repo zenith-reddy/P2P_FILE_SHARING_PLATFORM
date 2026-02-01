@@ -33,7 +33,8 @@ export function startSocket(server) {
             const Url = `http://localhost:5173/${roomid}`;
             socket.emit("connected&url", {
                 url: Url,
-                message: "Room created successfully"
+                message: "Room created successfully",
+                roomID: roomid
             })
 
             socket.emit("msgg", {
@@ -50,7 +51,7 @@ export function startSocket(server) {
             socket.join(roomid);
             socket.roomId = roomid;
 
-            socket.to(roomid).emit("msgg", { peerId: socket.id })
+            socket.to(roomid).emit("peerconnected", { peerId: socket.id })
             console.log(`room joined: ${roomid}`);
 
             socket.emit("msgg", {

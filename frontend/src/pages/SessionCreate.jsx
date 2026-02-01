@@ -7,6 +7,12 @@ import { io } from "socket.io-client";
 const SessionCreate = () => {
   const ws = useRef(null); //imp
   const [sessionUrl, setSessionUrl] = useState(null);
+  const [roomid, setroomid] = useState(null);
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
+
+  let dc;
 
   useEffect(() => {
     ws.current = io("http://localhost:8080", {
@@ -28,13 +34,47 @@ const SessionCreate = () => {
     ws.current.onAny((event, data) => {
       if (event === "connected&url") {
         setSessionUrl(data.url);
+        setroomid(data.roomID);
       }
     });
     ws.current.on("msgg", (data) => {
       console.log(data);
     });
 
+    ws.current.on("peerconnected", async (data) => {
+      dc = pc.createDataChannel("data");
 
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      log("Offer created");
+
+      dc.onopen = () => log("DataChannel OPEN"); //after the datachannell is opened
+
+      // dc.onmessage = (e) => {
+      //   log("Received file");
+
+      //   const blob = new Blob([e.data]); //e.data => arraybuffer -> not readable -> need to be dpwnloaded
+      //   const url = URL.createObjectURL(blob);
+      //   const a = document.createElement("a");
+      //   a.href = url;
+      //   a.download = "received_filee";
+      //   a.click();
+      //   URL.revokeObjectURL(url);
+      // };
+    });
+
+    // ICE gathering finished → show SDP
+    pc.onicecandidate = (e) => {
+      if (e.candidate === null) {
+        ws.current.to(roomid).emit("sdp-offer", {
+          sdpoffer: pc.localDescription,
+        });
+      }
+    };
+
+    ws.current.on("sdp-answer", async (data) => {
+      await pc.setRemoteDescription(data.sdpanswer);
+    });
     return () => {
       ws.current.disconnect();
     };

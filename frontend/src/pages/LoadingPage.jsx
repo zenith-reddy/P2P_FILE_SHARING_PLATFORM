@@ -12,7 +12,15 @@ const LoadingPage = () => {
     SYNC: "Synchronizing state...",
     DONE: "Connection established",
   };
+  const pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
+  });
 
+  let dc;
+
+  ////////////////////////////
+  //**************************ws.current ===> oka socket*****************************
+  //////////////////////
   const updateStatus = (step) => {
     setStatusText(STEPS[step]);
   };
@@ -40,8 +48,30 @@ const LoadingPage = () => {
         },
         console.log(sessid),
       );
-
     });
+
+    ws.current.on("sdp-offer", async (data) => {
+      const offer = data.sdpoffer;
+
+      await pc.setRemoteDescription(offer);
+
+      if (offer.type === "offer") {
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        // console.log("Answer created");
+      }
+      // else {
+      //   log("Remote description set");
+      // }
+    });
+
+    pc.onicecandidate = (e) => {
+      if (e.candidate === null) {
+        ws.current.to(roomid).emit("sdp-answer", {
+          sdpanswer: pc.localDescription,
+        });
+      }
+    };
 
     return () => {
       ws.current.disconnect();
