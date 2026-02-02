@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import "./FileTransfer.css";
+import { socket, pc, dc } from "../webrtc";
+import { useNavigate } from "react-router-dom";
 
 const FileTransfer = () => {
+  const navigate = useNavigate();
   // --- STATE MANAGEMENT ---
   const [activeTransfers, setActiveTransfers] = useState([
     {
@@ -22,6 +25,20 @@ const FileTransfer = () => {
   // State: 'connected' or 'retrying'
   const [connectionStatus, setConnectionStatus] = useState("connected");
 
+  useEffect(() => {
+    if (!dc) {
+      // setConnectionStatus("disconnected");
+      navigate(`/`); // just for temporary later in app.jsx
+      return;
+    }
+
+    if (dc.readyState === "open") {
+      setConnectionStatus("connected");
+    } else {
+      setConnectionStatus("retrying");
+    }
+  }, [dc, dc?.readyState]);
+
   const [logs, setLogs] = useState([
     { time: "23:36:01", message: "Peer connected successfully." },
     { time: "23:36:10", message: "Started sending project_v1.zip" },
@@ -34,8 +51,20 @@ const FileTransfer = () => {
   const handleFileSelect = (event) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      // LOGIC: Iterate through files and initiate WebRTC transfer immediately
       console.log("Files selected:", files);
+      if (dc && dc.readyState === "open") {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            dc.send(reader.result);
+            console.log("File sent", file.name);
+          };
+
+          reader.readAsArrayBuffer(file);
+        }
+      }
     }
   };
 
@@ -49,8 +78,20 @@ const FileTransfer = () => {
     e.stopPropagation();
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      // LOGIC: Handle dropped files and start transfer
-      console.log("Files dropped:", files);
+      console.log("Files selected:", files);
+      if (dc && dc.readyState === "open") {
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const reader = new FileReader();
+
+          reader.onload = () => {
+            dc.send(reader.result);
+            console.log("File sent", file.name);
+          };
+
+          reader.readAsArrayBuffer(file);
+        }
+      }
     }
   };
 
@@ -61,11 +102,16 @@ const FileTransfer = () => {
   return (
     <div className="transfer-page-wrapper">
       <div className="transfer-card">
-
         <div className="card-header">
           <div className={`status-badge ${connectionStatus}`}>
-            <div className={`status-dot ${connectionStatus === 'connected' ? 'pulse' : 'pulse-warning'}`}></div>
-            <span>{connectionStatus === 'connected' ? "Securely Connected" : "Connection Lost. Retrying..."}</span>
+            <div
+              className={`status-dot ${connectionStatus === "connected" ? "pulse" : "pulse-warning"}`}
+            ></div>
+            <span>
+              {connectionStatus === "connected"
+                ? "Securely Connected"
+                : "Connection Lost. Retrying..."}
+            </span>
           </div>
           <button
             className="disconnect-btn"
