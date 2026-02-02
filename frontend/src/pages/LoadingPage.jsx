@@ -3,10 +3,11 @@ import { useParams } from "react-router-dom";
 import "./LoadingPage.css";
 import { io } from "socket.io-client";
 import { socket, pc } from "../webrtc";
+import { useNavigate } from "react-router-dom";
 
 const LoadingPage = () => {
+  const navigate = useNavigate();
   const [statusText, setStatusText] = useState("Initializing handshake...");
-
 
   const { sessid } = useParams();
   // Simulation of connection steps
@@ -38,6 +39,18 @@ const LoadingPage = () => {
       }
     };
 
+    const handlenavigate = () => {
+      setStatusText("connected");
+
+      setTimeout(() => {
+        setStatusText("redirecting..");
+      }, 1000);
+      
+      setTimeout(() => {
+        navigate("/transfer");
+      }, 2000);
+    };
+
     pc.onicecandidate = (e) => {
       if (e.candidate === null && sessid) {
         socket.emit("sdp-answer", {
@@ -54,6 +67,7 @@ const LoadingPage = () => {
     }
 
     socket.on("sdp-offer", handlesdpoffer);
+    socket.on("getready", handlenavigate);
 
     return () => {
       // socket.disconnect();

@@ -23,8 +23,8 @@ const FileTransfer = () => {
   const [connectionStatus, setConnectionStatus] = useState("connected");
 
   const [logs, setLogs] = useState([
-    { time: "10:23:01", message: "Peer connected successfully." },
-    { time: "10:23:15", message: "Started sending project_v1.zip" },
+    { time: "23:36:01", message: "Peer connected successfully." },
+    { time: "23:36:10", message: "Started sending project_v1.zip" },
   ]);
 
   const fileInputRef = useRef(null);

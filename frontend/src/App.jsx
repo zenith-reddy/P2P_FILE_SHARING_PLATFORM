@@ -11,7 +11,7 @@ function App() {
       {/* P2PNetwork is outside Routes to ensure it remains 
          rendered as the persistent background across all pages 
       */}
-      {/* <P2PNetwork /> */}
+      <P2PNetwork />
 
       <Routes>
         <Route path="/" element={<SessionCreate />} />

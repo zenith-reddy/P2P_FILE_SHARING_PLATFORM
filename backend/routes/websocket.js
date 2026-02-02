@@ -61,6 +61,10 @@ export function startSocket(server) {
             });
         });
 
+        socket.on("getready",({roomid})=>{
+            socket.to(roomid).emit("getready");
+        })
+
         socket.on("sdp-offer", ({ roomid, sdpoffer }) => {
             socket.to(roomid).emit("sdp-offer", { sdpoffer });
             console.log("Relaying Offer for room:", roomid);

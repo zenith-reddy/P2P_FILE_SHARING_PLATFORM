@@ -5,8 +5,11 @@ import { QRCodeSVG } from "qrcode.react";
 // import { io } from "socket.io-client";
 import { socket, pc, dc } from "../webrtc";
 import { setDC } from "../webrtc";
+import { useNavigate } from "react-router-dom";
+
 
 const SessionCreate = () => {
+  const navigate = useNavigate();
   const [sessionUrl, setSessionUrl] = useState(null);
   const [roomid, setroomid] = useState(null);
 
@@ -40,6 +43,10 @@ const SessionCreate = () => {
       console.log("SDP Answer:", data.sdpanswer);
       await pc.setRemoteDescription(data.sdpanswer);
       console.log("remote description set  dc opened");
+
+      socket.emit("getready",{roomid});
+
+      navigate(`/transfer`);
     };
 
     pc.onicecandidate = (e) => {
