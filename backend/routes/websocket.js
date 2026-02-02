@@ -33,8 +33,7 @@ export function startSocket(server) {
             const Url = `http://localhost:5173/${roomid}`;
             socket.emit("connected&url", {
                 url: Url,
-                message: "Room created successfully",
-                roomID: roomid
+                roomID: roomid,
             })
 
             socket.emit("msgg", {

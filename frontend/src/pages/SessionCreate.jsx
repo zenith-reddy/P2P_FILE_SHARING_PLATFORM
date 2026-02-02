@@ -7,7 +7,6 @@ import { socket, pc, dc } from "../webrtc";
 import { setDC } from "../webrtc";
 import { useNavigate } from "react-router-dom";
 
-
 const SessionCreate = () => {
   const navigate = useNavigate();
   const [sessionUrl, setSessionUrl] = useState(null);
@@ -16,8 +15,8 @@ const SessionCreate = () => {
   useEffect(() => {
     const handleconnect = () => {
       console.log("WS connected");
-      socket.emit("msgg", { message: "WebSocket connected" });
-      socket.emit("createroom", { message: "room joined" });
+      // socket.emit("msgg", { message: "WebSocket connected" });
+      socket.emit("createroom", {});
     };
 
     const handleurl = (data) => {
@@ -30,9 +29,16 @@ const SessionCreate = () => {
       console.log("Peer connected via socket");
 
       // Prevent creating duplicate channels if one already exists
-      const channel = pc.createDataChannel("data");
+      const channel = pc.createDataChannel("data", {
+        //State: connecting ,  onopen does not fire yet cause the pc in not completed
+        ordered: true, // keep chunk order
+        maxRetransmits: null, // reliable
+      });
       setDC(channel);
-      channel.onopen = () => console.log("Datachannel opened");
+      // channel.onopen = () => console.log("Datachannel opened");
+      dc.onopen = () => {
+        navigate(`/transfer`);
+      };
 
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
@@ -44,9 +50,7 @@ const SessionCreate = () => {
       await pc.setRemoteDescription(data.sdpanswer);
       console.log("remote description set  dc opened");
 
-      socket.emit("getready",{roomid});
-
-      navigate(`/transfer`);
+      // socket.emit("getready", { roomid });
     };
 
     pc.onicecandidate = (e) => {

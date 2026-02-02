@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useParams } from "react-router-dom";
 import "./LoadingPage.css";
-import { io } from "socket.io-client";
-import { socket, pc } from "../webrtc";
+// import { io } from "socket.io-client";
+import { socket, pc, dc, setDC } from "../webrtc";
 import { useNavigate } from "react-router-dom";
 
 const LoadingPage = () => {
@@ -15,6 +15,15 @@ const LoadingPage = () => {
     if (!sessid) {
       return;
     }
+
+    pc.ondatachannel = (event) => {
+      // const dc = event.channel;
+      setDC(event.channel);
+
+      dc.onopen = () => {
+        navigate(`/transfer`);
+      };
+    };
 
     const handleconnect = () => {
       console.log("WS connected joining room:", sessid);
@@ -45,14 +54,14 @@ const LoadingPage = () => {
       setTimeout(() => {
         setStatusText("redirecting..");
       }, 1000);
-      
+
       setTimeout(() => {
         navigate("/transfer");
       }, 2000);
     };
 
     pc.onicecandidate = (e) => {
-      if (e.candidate === null && sessid) {
+      if (e.candidate === null) {
         socket.emit("sdp-answer", {
           roomid: sessid,
           sdpanswer: pc.localDescription,
