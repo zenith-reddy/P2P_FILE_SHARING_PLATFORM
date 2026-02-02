@@ -5,7 +5,6 @@ import { useParams } from "react-router-dom";
 import { socket, pc, dc, setDC } from "../webrtc";
 import "../Styles/LoadingPage.css";
 // import { io } from "socket.io-client";
-import { socket, pc } from "../webrtc";
 import { useNavigate } from "react-router-dom";
 
 const LoadingPage = () => {
