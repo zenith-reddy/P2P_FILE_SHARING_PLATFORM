@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import './P2PNetwork.css';
+import '../Styles/P2PNetwork.css';
 
 const P2PNetwork = () => {
   const canvasRef = useRef(null);

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import "./FileTransfer.css";
+import "../Styles/FileTransfer.css";
 import { socket, pc, dc } from "../webrtc";
 import { useNavigate } from "react-router-dom";
 

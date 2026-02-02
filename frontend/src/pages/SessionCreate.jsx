@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./SessionCreate.css";
+import "../Styles/SessionCreate.css";
 import dummyQR from "../assets/dummyqr200x200.png";
 import { QRCodeSVG } from "qrcode.react";
 // import { io } from "socket.io-client";
