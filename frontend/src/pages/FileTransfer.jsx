@@ -52,6 +52,16 @@ const FileTransfer = () => {
   //   // Cleanup: Remove handler when component dies
   //   return () => registerProgressHandler(null);
   // }, []);
+
+  const now = new Date();
+
+  const getTime = () =>
+    new Date().toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
   useEffect(() => {
     const handleUnload = () => {
       cleanupWebRTC();
@@ -129,6 +139,14 @@ const FileTransfer = () => {
             },
           ]);
 
+          setLogs((prev) => [
+            ...prev,
+            {
+              time: getTime(),
+              message: `receiving ${msg.name}`,
+            },
+          ]);
+
           return;
         }
 
@@ -146,6 +164,13 @@ const FileTransfer = () => {
           setActiveTransfers((prev) =>
             prev.map((t) => (t.id === file.id ? { ...t, progress: 100 } : t)),
           );
+          setLogs((prev) => [
+            ...prev,
+            {
+              time: getTime(),
+              message: `received ${file.name}`,
+            },
+          ]);
 
           receiveBufferRef.current = [];
           currentFileRef.current = null;
@@ -187,6 +212,14 @@ const FileTransfer = () => {
       },
     ]);
 
+    setLogs((prev) => [
+      ...prev,
+      {
+        time: getTime(),
+        message: `sending ${file.name}`,
+      },
+    ]);
+
     dc.send(
       JSON.stringify({
         type: "file-meta",
@@ -217,6 +250,13 @@ const FileTransfer = () => {
         id: fileId,
       }),
     );
+    setLogs((prev) => [
+      ...prev,
+      {
+        time: getTime(),
+        message: `sent ${file.name}`,
+      },
+    ]);
   };
 
   const handleFileSelect = async (event) => {
@@ -278,6 +318,17 @@ const FileTransfer = () => {
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
+
+  //autoscroll
+  const logEndRef = useRef(null);
+  const ActTransRef = useRef(null);
+
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+  useEffect(() => {
+    ActTransRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
 
   return (
     <div className="transfer-page-wrapper">
@@ -349,11 +400,14 @@ const FileTransfer = () => {
                       <div key={file.id} className="transfer-item">
                         {/* Add 'completed' class here for CSS animation */}
                         <div
-                          className={`file-icon ${isCompleted ? "completed" : ""}`}
+                          className={`file-icon ${isCompleted ? "completed" : ""} ${file.type === "sending" ? "sending" : ""}`}
                         >
                           {isCompleted ? (
-                            // Show Tick if 100%
-                            <CheckIcon />
+                            file.type === "sending" ? (
+                              <CheckIconsent />
+                            ) : (
+                              <CheckIconreceived />
+                            )
                           ) : file.type === "sending" ? (
                             <ArrowUpIcon />
                           ) : (
@@ -387,6 +441,7 @@ const FileTransfer = () => {
                     );
                   })
                 )}
+                <div ref={ActTransRef} />
               </div>
             </div>
 
@@ -401,6 +456,7 @@ const FileTransfer = () => {
                   </div>
                 ))}
                 {/* LOGIC: Auto-scroll to bottom of logs */}
+                <div ref={logEndRef} />
               </div>
             </div>
           </div>
@@ -463,13 +519,27 @@ const ArrowDownIcon = () => (
 );
 
 // Add this with your other icons at the bottom of FileTransfer.jsx
-const CheckIcon = () => (
+const CheckIconsent = () => (
   <svg
     width="22"
     height="22"
     viewBox="0 0 24 24"
     fill="none"
     stroke="#4ade80"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12"></polyline>
+  </svg>
+);
+const CheckIconreceived = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#60a5fa"
     strokeWidth="3"
     strokeLinecap="round"
     strokeLinejoin="round"

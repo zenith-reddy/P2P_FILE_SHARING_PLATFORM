@@ -43,9 +43,9 @@ setInterval(() => {   //memory cleanup
     const now = Date.now();
     const RATE_LIMIT_WINDOW = 10 * 60 * 1000;
 
-    for (const [ip, timestamps] of ipRequests) {
+    for (const [ip, timestamps] of iphashmap) {
         if (now - timestamps[timestamps.length - 1] > RATE_LIMIT_WINDOW) {
-            ipRequests.delete(ip);
+            iphashmap.delete(ip);
         }
     }
 }, 60 * 60 * 1000);
