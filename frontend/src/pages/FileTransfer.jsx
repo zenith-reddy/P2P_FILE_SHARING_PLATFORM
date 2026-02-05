@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
-import { socket, pc, dc,cleanupWebRTC } from "../webrtc";
+import { socket, pc, dc, cleanupWebRTC } from "../webrtc";
 import "../Styles/FileTransfer.css";
 import { useNavigate } from "react-router-dom";
+import { v4 as uuidv4 } from "uuid";
 
 const FileTransfer = () => {
   const navigate = useNavigate();
@@ -172,7 +173,7 @@ const FileTransfer = () => {
   }, [dc]);
 
   const sendFile = async (file) => {
-    const fileId = crypto.randomUUID();
+    const fileId = uuidv4();
     let offset = 0;
 
     setActiveTransfers((prev) => [
@@ -340,37 +341,51 @@ const FileTransfer = () => {
                 {activeTransfers.length === 0 ? (
                   <div className="empty-state">No active transfers</div>
                 ) : (
-                  activeTransfers.map((file) => (
-                    <div key={file.id} className="transfer-item">
-                      <div className="file-icon">
-                        {file.type === "sending" ? (
-                          <ArrowUpIcon />
-                        ) : (
-                          <ArrowDownIcon />
-                        )}
+                  activeTransfers.map((file) => {
+                    // Check if transfer is done
+                    const isCompleted = file.progress === 100;
+
+                    return (
+                      <div key={file.id} className="transfer-item">
+                        {/* Add 'completed' class here for CSS animation */}
+                        <div
+                          className={`file-icon ${isCompleted ? "completed" : ""}`}
+                        >
+                          {isCompleted ? (
+                            // Show Tick if 100%
+                            <CheckIcon />
+                          ) : file.type === "sending" ? (
+                            <ArrowUpIcon />
+                          ) : (
+                            <ArrowDownIcon />
+                          )}
+                        </div>
+
+                        <div className="file-details">
+                          <div className="file-name-row">
+                            <span className="name">{file.name}</span>
+                            <span className="size">{file.size}</span>
+                          </div>
+                          <div className="progress-bar-container">
+                            <div
+                              className={`progress-bar-fill ${file.type}`}
+                              style={{ width: `${file.progress}%` }}
+                            ></div>
+                          </div>
+                          <div className="status-row">
+                            <span>
+                              {isCompleted
+                                ? "Completed"
+                                : file.type === "sending"
+                                  ? "Sending..."
+                                  : "Downloading..."}
+                            </span>
+                            <span>{file.progress}%</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="file-details">
-                        <div className="file-name-row">
-                          <span className="name">{file.name}</span>
-                          <span className="size">{file.size}</span>
-                        </div>
-                        <div className="progress-bar-container">
-                          <div
-                            className={`progress-bar-fill ${file.type}`}
-                            style={{ width: `${file.progress}%` }}
-                          ></div>
-                        </div>
-                        <div className="status-row">
-                          <span>
-                            {file.type === "sending"
-                              ? "Sending..."
-                              : "Downloading..."}
-                          </span>
-                          <span>{file.progress}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
@@ -444,6 +459,22 @@ const ArrowDownIcon = () => (
   >
     <line x1="12" y1="5" x2="12" y2="19"></line>
     <polyline points="19 12 12 19 5 12"></polyline>
+  </svg>
+);
+
+// Add this with your other icons at the bottom of FileTransfer.jsx
+const CheckIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#4ade80"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12"></polyline>
   </svg>
 );
 

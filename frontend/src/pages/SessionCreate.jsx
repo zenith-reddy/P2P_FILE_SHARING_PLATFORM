@@ -37,7 +37,13 @@ const SessionCreate = () => {
       setDC(channel);
       // channel.onopen = () => console.log("Datachannel opened");
       dc.onopen = () => {
+      
+
+
+
         navigate(`/transfer`);
+        
+
       };
 
       const offer = await pc.createOffer();
