@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { customAlphabet } from "nanoid";
 import crypto from "crypto";
+import { auditLog } from "../utils/auditlogger.js";
 
 const nanoid = customAlphabet("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 15);
 
@@ -25,7 +26,7 @@ const iphashmap = new Map();
 function ratelimit(iphash) {    //rate limit
     const now = Date.now();
     const window = 2 * 60 * 1000;
-    const MAX_REQUESTS =10;
+    const MAX_REQUESTS = 10;
 
     let queue = iphashmap.get(iphash) || [];
 
@@ -35,6 +36,14 @@ function ratelimit(iphash) {    //rate limit
     queue.push(now);
     iphashmap.set(iphash, queue);
 
+    if (queue.length > MAX_REQUESTS) {
+        auditLog({
+            ip: iphash,
+            socketid: socket.id,
+            action: "RATE_LIMIT_EXCEEDED"
+        });
+        return true;
+    }
     return queue.length > MAX_REQUESTS;
 
 }
@@ -68,11 +77,15 @@ export function startSocket(server) {
     io.on("connection", (socket) => {
 
         console.log("socket connected:", socket.id);
-        // console.log(
-        //     JSON.stringify(socket.handshake, null, 2)
-        // );
 
         socket.iphash = hashIp(socket.handshake.headers["x-forwarded-for"]?.split(",")[0] || socket.handshake.address)
+
+        auditLog({
+            ip: socket.iphash,
+            socketid: socket.id,
+            action: "SOCKET_CONNECTED"
+        });
+
         if (ratelimit(socket.iphash)) {
             socket.emit("rate limited")
             socket.disconnect(true);
@@ -84,6 +97,13 @@ export function startSocket(server) {
             socket.join(roomid);
             socket.roomId = roomid;
             console.log(`room created: ${roomid}`);
+
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `ROOM_CREATED:${roomid}`
+            });
+
             const Url = `http://localhost:5173/${roomid}`;
             socket.emit("connected&url", {
                 url: Url,
@@ -104,6 +124,12 @@ export function startSocket(server) {
             socket.join(roomid);
             socket.roomId = roomid;
 
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `ROOM_JOINED:${roomid}`
+            });
+
             socket.to(roomid).emit("peerconnected", { peerId: socket.id })
             console.log(`room joined: ${roomid}`);
 
@@ -115,15 +141,36 @@ export function startSocket(server) {
         });
 
         socket.on("getready", ({ roomid }) => {
+
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `GET_READY:${roomid}`
+            });
+
             socket.to(roomid).emit("getready");
         })
 
         socket.on("sdp-offer", ({ roomid, sdpoffer }) => {
+
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `SDP_OFFER_SENT:${roomid}`
+            });
+
             socket.to(roomid).emit("sdp-offer", { sdpoffer });
             console.log("Relaying Offer for room:", roomid);
         });
 
         socket.on("sdp-answer", ({ roomid, sdpanswer }) => {
+
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `SDP_ANSWER_SENT:${roomid}`
+            });
+
             socket.to(socket.roomId).emit("sdp-answer", { sdpanswer });
             console.log("Relaying Answer for room:", roomid);
         });
@@ -134,6 +181,13 @@ export function startSocket(server) {
 
         socket.on("disconnect", (reason) => {
             console.log("WS disconnected:", reason);
+
+            auditLog({
+                ip: socket.iphash,
+                socketid: socket.id,
+                action: `SOCKET_DISCONNECTED:${reason}`
+            });
+
             socket.leave(socket.roomId);
         });
     })
