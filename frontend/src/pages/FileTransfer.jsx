@@ -3,6 +3,7 @@ import { socket, pc, dc, cleanupWebRTC } from "../webrtc";
 import "../Styles/FileTransfer.css";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidv4 } from "uuid";
+import { sessionKey } from "../Encryption.js";
 
 const FileTransfer = () => {
   const navigate = useNavigate();
@@ -61,7 +62,27 @@ const FileTransfer = () => {
       minute: "2-digit",
       second: "2-digit",
     });
+  async function encryptChunk(sessionKey, chunkBuffer) {
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const encrypted = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv },
+      sessionKey,
+      chunkBuffer,
+    );
+    return { iv, data: encrypted };
+  }
+  async function decryptChunk(sessionKey, iv, encryptedData) {
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv,
+      },
+      sessionKey,
+      encryptedData,
+    );
 
+    return decrypted;
+  }
   useEffect(() => {
     const handleUnload = () => {
       cleanupWebRTC();
@@ -119,7 +140,7 @@ const FileTransfer = () => {
   useEffect(() => {
     if (!dc) return;
 
-    dc.onmessage = (e) => {
+    dc.onmessage = async (e) => {
       if (typeof e.data === "string") {
         const msg = JSON.parse(e.data);
 
@@ -178,9 +199,15 @@ const FileTransfer = () => {
           return;
         }
       }
+      const parsedData = JSON.parse(e.data);
+      const decryptedData = await decryptChunk(
+        sessionKey,
+        parsedData.iv,
+        parsedData.data,
+      );
+      receiveBufferRef.current.push(decryptedData);
 
-      receiveBufferRef.current.push(e.data);
-      receivedSizeRef.current += e.data.byteLength;
+      receivedSizeRef.current += decryptedData.byteLength;
 
       const file = currentFileRef.current;
       if (!file) return;
@@ -236,7 +263,16 @@ const FileTransfer = () => {
 
       const slice = file.slice(offset, offset + chunkSize);
       const buffer = await slice.arrayBuffer();
-      dc.send(buffer);
+      const { iv, data } = await encryptChunk(sessionKey, buffer);
+
+      dc.send(
+        JSON.stringify({
+          type: "file-chunk",
+          iv: Array.from(iv),
+          data: Array.from(new Uint8Array(data)),
+        }),
+      );
+
       offset += buffer.byteLength;
       const percent = Math.floor((offset / file.size) * 100);
       setActiveTransfers((prev) =>

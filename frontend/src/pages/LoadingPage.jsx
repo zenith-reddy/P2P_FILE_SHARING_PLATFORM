@@ -6,6 +6,12 @@ import { socket, pc, dc, setDC } from "../webrtc";
 import "../Styles/LoadingPage.css";
 // import { io } from "socket.io-client";
 import { useNavigate } from "react-router-dom";
+import {
+  setpair,
+  setPublicKey,
+  setsharedpublicKey,
+  setSessionKey,
+} from "../Encryption.js";
 
 const LoadingPage = () => {
   const navigate = useNavigate();
@@ -22,8 +28,29 @@ const LoadingPage = () => {
       // const dc = event.channel;
       setDC(event.channel);
 
-      dc.onopen = () => {
-        navigate(`/transfer`);
+      dc.onopen = async () => {
+        await setpair;
+        const localPublicKey = await setPublicKey();
+        dc.send(
+          JSON.stringify({
+            type: "public-key",
+            key: Array.from(localPublicKey),
+          }),
+        );
+
+        //sec-> pk
+        //keypair.publicKey()
+        // await setsharedpublicKey();
+        // await setSessionKey();
+      };
+      dc.onmessage = async (event) => {
+        const message = event.data;
+        const parsedMessage = JSON.parse(message);
+        if (parsedMessage.type === "public-key ") {
+          await setsharedpublicKey(new Uint8Array(parsedMessage.key));
+          await setSessionKey();
+          navigate(`/transfer`);
+        }
       };
     };
 

@@ -1,24 +1,24 @@
 
 let keyPair=null;
-let localPublickey=null;
-let remotePublickey=null;
-let sessionKey=null;
+let localPublicKey=null;
+let remotePublicKey=null;
+export let sessionKey=null;
 
 
 
-//generate the key.pair - > start of session
+
 export async function setpair(){
     keyPair=await generateECDHPair();
     return keyPair;
 }
-export function setpublickey(){
+export async function setPublicKey(){
      if (!keyPair) throw new Error("KeyPair not created yet");
 
   localPublicKey = await exportPublicKey(keyPair.publicKey);
   return localPublicKey;
 }
-export function setsharedpublickey(socketremotePublickey){
-   emotePublicKey = await importRemotePublicKey(socketRemotePublicKey);
+export async function setsharedpublicKey(socketRemotePublicKey){
+   remotePublicKey = await importRemotePublicKey(socketRemotePublicKey);
   return remotePublicKey;
 }
 
@@ -36,9 +36,10 @@ export async function setSessionKey(){
 }
 
 
+//start of the real functions
 
 
-
+//generate the key.pair - > start of session
 export async function generateECDHPair() {
   return await crypto.subtle.generateKey(
     {

@@ -6,6 +6,12 @@ import { QRCodeSVG } from "qrcode.react";
 import { socket, pc, dc } from "../webrtc";
 import { setDC } from "../webrtc";
 import { useNavigate } from "react-router-dom";
+import {
+  setpair,
+  setPublicKey,
+  setsharedpublicKey,
+  setSessionKey,
+} from "../Encryption.js";
 
 const SessionCreate = () => {
   const navigate = useNavigate();
@@ -36,16 +42,30 @@ const SessionCreate = () => {
       });
       setDC(channel);
       // channel.onopen = () => console.log("Datachannel opened");
-      dc.onopen = () => {
-      
+      dc.onopen = async () => {
+        await setpair;
+        const localPublicKey = await setPublicKey();
+        dc.send(
+          JSON.stringify({
+            type: "public-key",
+            key: Array.from(localPublicKey),
+          }),
+        );
 
-
-
-        navigate(`/transfer`);
-        
-
+        //sec-> pk
+        //keypair.publicKey()
+        // await setsharedpublicKey();
+        // await setSessionKey();
       };
-
+      dc.onmessage = async (event) => {
+        const message = event.data;
+        const parsedMessage = JSON.parse(message);
+        if (parsedMessage.type === "public-key ") {
+          await setsharedpublicKey(new Uint8Array(parsedMessage.key));
+          await setSessionKey();
+          navigate(`/transfer`);
+        }
+      };
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);
       console.log("Offer created");
