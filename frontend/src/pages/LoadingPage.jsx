@@ -104,6 +104,8 @@ const LoadingPage = () => {
       handleconnect();
     }
 
+    socket.on("connect", handleconnect);
+
     socket.on("sdp-offer", handlesdpoffer);
     socket.on("getready", handlenavigate);
 
@@ -111,6 +113,7 @@ const LoadingPage = () => {
       // socket.disconnect();
       socket.off("connect", handleconnect);
       socket.off("sdp-offer", handlesdpoffer);
+      socket.off("getready", handlenavigate);
       pc.onicecandidate = null;
     };
   }, [sessid]);
