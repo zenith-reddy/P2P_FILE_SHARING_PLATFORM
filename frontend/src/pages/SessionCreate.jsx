@@ -26,7 +26,9 @@ const SessionCreate = () => {
     };
 
     const handleurl = (data) => {
-      setSessionUrl(data.url);
+      
+      setSessionUrl(`${window.location.origin}/${data.roomID}`);
+      // setSessionUrl(data.url);
       setroomid(data.roomID);
       console.log("url has been set");
     };
