@@ -28,10 +28,10 @@ const LoadingPage = () => {
       // const dc = event.channel;
       setDC(event.channel);
 
-      dc.onopen = async () => {
+      event.channel.onopen = async () => {
         await setpair();
         const localPublicKey = await setPublicKey();
-        dc.send(
+        event.channel.send(
           JSON.stringify({
             type: "public-key",
             key: Array.from(localPublicKey),
@@ -43,7 +43,7 @@ const LoadingPage = () => {
         // await setsharedpublicKey();
         // await setSessionKey();
       };
-      dc.onmessage = async (event) => {
+      event.channel.onmessage = async (event) => {
         const message = event.data;
         const parsedMessage = JSON.parse(message);
         if (parsedMessage.type === "public-key") {
