@@ -267,6 +267,32 @@
   border-color: rgba(96, 165, 250, 0.4);
 }
 
+/* --- NEW: Waiting State Styles --- */
+
+/* Muted gray look for the waiting icon */
+.file-icon.waiting {
+  background: rgba(148, 163, 184, 0.1); 
+  border-color: rgba(148, 163, 184, 0.3);
+  color: #94a3b8;
+}
+
+/* Gray, pulsing progress bar for queued files */
+.progress-bar-fill.waiting {
+  background: #64748b; /* Slate color */
+  opacity: 0.3;
+  animation: pulseQueue 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Subtle animation to show it's "alive" but waiting */
+@keyframes pulseQueue {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
 /* Progress Bar */
 .progress-bar-container {
   width: 100%;

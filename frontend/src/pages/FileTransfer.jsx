@@ -7,7 +7,31 @@ import { sessionKey } from "../Encryption.js";
 
 const FileTransfer = () => {
   const navigate = useNavigate();
-  // --- STATE MANAGEMENT ---
+  
+  const [activeTransfers, setActiveTransfers] = useState([]);
+  const [connectionStatus, setConnectionStatus] = useState("connected");
+  const [istransfering, setistransfering] = useState(false);
+  const [logs, setLogs] = useState([
+    { time: new Date().toLocaleTimeString("en-GB"), message: "Peer connected successfully." },
+  ]);
+
+  const fileInputRef = useRef(null);
+  const logEndRef = useRef(null);
+  const ActTransRef = useRef(null);
+
+  const chunkSize = 16384;
+  const MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
+  const receiveBufferRef = useRef([]);
+  const receivedSizeRef = useRef(0);
+  const currentFileRef = useRef(null);
+
+  const getTime = () =>
+    new Date().toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+
   function downloadBlob(blob, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -16,52 +40,7 @@ const FileTransfer = () => {
     a.click();
     URL.revokeObjectURL(url);
   }
-  const [activeTransfers, setActiveTransfers] = useState([
-    // {
-    //   id: 1,
-    //   name: "project_v1.zip",
-    //   type: "sending",
-    //   progress: 45,
-    //   size: "12MB",
-    // },
-    // {
-    //   id: 2,
-    //   name: "image_assets.png",
-    //   type: "receiving",
-    //   progress: 80,
-    //   size: "4MB",
-    // },
-  ]);
-  // State: 'connected' or 'retrying'
-  const [connectionStatus, setConnectionStatus] = useState("connected");
 
-  // useEffect(() => {
-  //   registerProgressHandler((data) => {
-  //     if (data.type === "start") {
-  //       // Add the new file to the list
-  //       setActiveTransfers((prev) => [...prev, data.file]);
-  //     } else {
-  //       // Update progress for existing file
-  //       setActiveTransfers((prev) =>
-  //         prev.map((t) =>
-  //           t.id === data.id ? { ...t, progress: data.progress } : t,
-  //         ),
-  //       );
-  //     }
-  //   });
-
-  //   // Cleanup: Remove handler when component dies
-  //   return () => registerProgressHandler(null);
-  // }, []);
-
-  const now = new Date();
-
-  const getTime = () =>
-    new Date().toLocaleTimeString("en-GB", {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
   async function encryptChunk(sessionKey, chunkBuffer) {
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const encrypted = await crypto.subtle.encrypt(
@@ -71,71 +50,67 @@ const FileTransfer = () => {
     );
     return { iv, data: encrypted };
   }
+
   async function decryptChunk(sessionKey, iv, encryptedData) {
     const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv,
-      },
+      { name: "AES-GCM", iv },
       sessionKey,
       encryptedData,
     );
-
     return decrypted;
   }
+
+  const formatBytes = (bytes) => {
+    if (bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    // Find the right index for the sizes array
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    // Calculate the size and round to 1 decimal place (e.g., 2.4 MB)
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
   useEffect(() => {
-    const handleUnload = () => {
-      cleanupWebRTC();
-    };
-
+    const handleUnload = () => cleanupWebRTC();
     window.addEventListener("beforeunload", handleUnload);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleUnload);
-    };
+    return () => window.removeEventListener("beforeunload", handleUnload);
   }, []);
 
   useEffect(() => {
     if (!dc) {
-      // setConnectionStatus("disconnected");
-      navigate(`/`); // just for temporary later in app.jsx
+      navigate(`/`);
       return;
     }
-
     if (dc.readyState === "open") {
       setConnectionStatus("connected");
     } else {
       setConnectionStatus("retrying");
     }
-  }, [dc, dc?.readyState]);
+  }, [dc, dc?.readyState, navigate]);
 
-  const [logs, setLogs] = useState([
-    { time: "23:36:01", message: "Peer connected successfully." },
-    { time: "23:36:10", message: "Started sending project_v1.zip" },
-  ]);
+  // Autoscroll logic
+  useEffect(() => {
+    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+  useEffect(() => {
+    ActTransRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [activeTransfers.length]);
 
-  const fileInputRef = useRef(null);
 
-  // --- HANDLERS ---
-  const chunkSize = 16384;
-  const MAX_BUFFERED_AMOUNT = 8 * 1024 * 1024;
+  useEffect(() => {
+    if (istransfering) return;
 
-  const receiveBufferRef = useRef([]);
-  const receivedSizeRef = useRef(0);
-  const currentFileRef = useRef(null);
+    // Find the next waiting file
+    const nextFile = activeTransfers.find(
+      (t) => t.status === "waiting" && t.type === "sending"
+    );
 
-  const waitForBufferLow = () => {
-    if (dc.bufferedAmount < MAX_BUFFERED_AMOUNT) {
-      return Promise.resolve();
+    if (nextFile) {
+      setistransfering(true);
+      sendFile(nextFile);
     }
+  }, [activeTransfers, istransfering]);
 
-    return new Promise((resolve) => {
-      dc.onbufferedamountlow = () => {
-        dc.onbufferedamountlow = null;
-        resolve();
-      };
-    });
-  };
 
   useEffect(() => {
     if (!dc) return;
@@ -154,20 +129,14 @@ const FileTransfer = () => {
             {
               id: msg.id,
               name: msg.name,
-              size: `${Math.ceil(msg.size / 1024 / 1024)}MB`,
+              size: formatBytes(msg.size),
               progress: 0,
               type: "receiving",
+              status: "transferring", // Mark explicitly as transferring
             },
           ]);
 
-          setLogs((prev) => [
-            ...prev,
-            {
-              time: getTime(),
-              message: `receiving ${msg.name}`,
-            },
-          ]);
-
+          setLogs((prev) => [...prev, { time: getTime(), message: `Receiving ${msg.name}` }]);
           return;
         }
 
@@ -175,23 +144,14 @@ const FileTransfer = () => {
           const file = currentFileRef.current;
           if (!file) return;
 
-          const blob = new Blob(receiveBufferRef.current, {
-            type: file.mime,
-          });
-
+          const blob = new Blob(receiveBufferRef.current, { type: file.mime });
           downloadBlob(blob, file.name);
 
-          // mark as 100%
+          // Mark as 100% and completed
           setActiveTransfers((prev) =>
-            prev.map((t) => (t.id === file.id ? { ...t, progress: 100 } : t)),
+            prev.map((t) => (t.id === file.id ? { ...t, progress: 100, status: "completed" } : t))
           );
-          setLogs((prev) => [
-            ...prev,
-            {
-              time: getTime(),
-              message: `received ${file.name}`,
-            },
-          ]);
+          setLogs((prev) => [...prev, { time: getTime(), message: `Received ${file.name}` }]);
 
           receiveBufferRef.current = [];
           currentFileRef.current = null;
@@ -199,52 +159,46 @@ const FileTransfer = () => {
           return;
         }
       }
+
       const parsedData = JSON.parse(e.data);
       const iv = new Uint8Array(parsedData.iv);
       const encryptedData = new Uint8Array(parsedData.data).buffer;
 
       const decryptedData = await decryptChunk(sessionKey, iv, encryptedData);
       receiveBufferRef.current.push(decryptedData);
-
       receivedSizeRef.current += decryptedData.byteLength;
 
       const file = currentFileRef.current;
       if (!file) return;
 
       const progress = Math.floor((receivedSizeRef.current / file.size) * 100);
-
       setActiveTransfers((prev) =>
-        prev.map((t) => (t.id === file.id ? { ...t, progress } : t)),
+        prev.map((t) => (t.id === file.id ? { ...t, progress } : t))
       );
-    };
-
-    return () => {
-      // dc.onmessage = null;
     };
   }, [dc]);
 
-  const sendFile = async (file) => {
-    const fileId = uuidv4();
+
+  const waitForBufferLow = () => {
+    if (dc.bufferedAmount < MAX_BUFFERED_AMOUNT) return Promise.resolve();
+    return new Promise((resolve) => {
+      dc.onbufferedamountlow = () => {
+        dc.onbufferedamountlow = null;
+        resolve();
+      };
+    });
+  };
+
+  const sendFile = async (transferItem) => {
+    const file = transferItem.fileObj;
+    const fileId = transferItem.id;
     let offset = 0;
 
-    setActiveTransfers((prev) => [
-      ...prev,
-      {
-        id: fileId,
-        name: file.name,
-        size: `${Math.ceil(file.size / 1024 / 1024)}MB`,
-        progress: 0,
-        type: "sending",
-      },
-    ]);
-
-    setLogs((prev) => [
-      ...prev,
-      {
-        time: getTime(),
-        message: `sending ${file.name}`,
-      },
-    ]);
+    // Update state from waiting to transferring
+    setActiveTransfers((prev) =>
+      prev.map((t) => (t.id === fileId ? { ...t, status: "transferring" } : t))
+    );
+    setLogs((prev) => [...prev, { time: getTime(), message: `Sending ${file.name}` }]);
 
     dc.send(
       JSON.stringify({
@@ -254,7 +208,7 @@ const FileTransfer = () => {
         size: file.size,
         mime: file.type,
         chunkSize: chunkSize,
-      }),
+      })
     );
 
     while (offset < file.size) {
@@ -269,58 +223,54 @@ const FileTransfer = () => {
           type: "file-chunk",
           iv: Array.from(iv),
           data: Array.from(new Uint8Array(data)),
-        }),
+        })
       );
 
       offset += buffer.byteLength;
       const percent = Math.floor((offset / file.size) * 100);
       setActiveTransfers((prev) =>
-        prev.map((t) => (t.id === fileId ? { ...t, progress: percent } : t)),
+        prev.map((t) => (t.id === fileId ? { ...t, progress: percent } : t))
       );
     }
 
-    dc.send(
-      JSON.stringify({
-        type: "file-end",
-        id: fileId,
-      }),
+    dc.send(JSON.stringify({ type: "file-end", id: fileId }));
+    
+    setActiveTransfers((prev) =>
+      prev.map((t) => (t.id === fileId ? { ...t, progress: 100, status: "completed" } : t))
     );
-    setLogs((prev) => [
-      ...prev,
-      {
-        time: getTime(),
-        message: `sent ${file.name}`,
-      },
-    ]);
+    setLogs((prev) => [...prev, { time: getTime(), message: `Sent ${file.name}` }]);
+
+    setistransfering(false); 
   };
 
-  const handleFileSelect = async (event) => {
-    const files = event.target.files;
-    if (files && files.length > 0) {
-      console.log("Files selected:", files);
-      if (dc && dc.readyState === "open") {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          await sendFile(file);
-          // const reader = new FileReader();
-          // let offset = 0;
-          // reader.addEventListener("load", (e) => {
-          //   dc.send(e.target.result);
-          //   offset += e.target.result.byteLength;
-          //   if (offset < file.size) {
-          //     readSlice(offset);
-          //   }
-          // });
 
-          // const readSlice = (o) => {
-          //   const slice = file.slice(offset, o + chunkSize);
-          //   fileReader.readAsArrayBuffer(slice);
-          // };
+  const enqueueFiles = (filesList) => {
+    if (!filesList || filesList.length === 0) return;
+    if (dc && dc.readyState === "open") {
+      const newTransfers = Array.from(filesList).map((f) => ({
+        id: uuidv4(),
+        name: f.name,
+        size: formatBytes(f.size),
+        progress: 0,
+        type: "sending",
+        status: "waiting", // ADD TO QUEUE AS WAITING
+        fileObj: f,        // Keep a reference to the actual file object to read later
+      }));
 
-          // readSlice(0);
-        }
-      }
+      setActiveTransfers((prev) => [...prev, ...newTransfers]);
     }
+  };
+
+  const handleFileSelect = (event) => {
+    enqueueFiles(event.target.files);
+    // Reset the input value so selecting the same file again works
+    if (fileInputRef.current) fileInputRef.current.value = ""; 
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    enqueueFiles(e.dataTransfer.files);
   };
 
   const handleDragOver = (e) => {
@@ -328,42 +278,10 @@ const FileTransfer = () => {
     e.stopPropagation();
   };
 
-  const handleDrop = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      console.log("Files selected:", files);
-      if (dc && dc.readyState === "open") {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
-          const reader = new FileReader();
-
-          reader.onload = () => {
-            dc.send(reader.result);
-            console.log("File sent", file.name);
-          };
-
-          reader.readAsArrayBuffer(file);
-        }
-      }
-    }
-  };
-
   const triggerFileInput = () => {
     fileInputRef.current.click();
   };
 
-  //autoscroll
-  const logEndRef = useRef(null);
-  const ActTransRef = useRef(null);
-
-  useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
-  useEffect(() => {
-    ActTransRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [logs]);
 
   return (
     <div className="transfer-page-wrapper">
@@ -383,11 +301,9 @@ const FileTransfer = () => {
             className="disconnect-btn"
             onClick={() => {
               cleanupWebRTC();
-
               setActiveTransfers([]);
               setLogs([]);
               setConnectionStatus("retrying");
-
               navigate("/");
             }}
           >
@@ -428,22 +344,26 @@ const FileTransfer = () => {
                   <div className="empty-state">No active transfers</div>
                 ) : (
                   activeTransfers.map((file) => {
-                    // Check if transfer is done
-                    const isCompleted = file.progress === 100;
+                    const isCompleted = file.status === "completed";
+                    const isWaiting = file.status === "waiting";
 
                     return (
                       <div key={file.id} className="transfer-item">
-                        {/* Add 'completed' class here for CSS animation */}
                         <div
-                          className={`file-icon ${isCompleted ? "completed" : ""} ${file.type === "sending" ? "sending" : ""}`}
+                          className={`file-icon ${isCompleted ? "completed" : ""} ${isWaiting ? "waiting" : ""} ${file.type === "sending" ? "sending" : ""}`}
                         >
+                          {/* 1. If Completed */}
                           {isCompleted ? (
                             file.type === "sending" ? (
                               <CheckIconsent />
                             ) : (
                               <CheckIconreceived />
                             )
-                          ) : file.type === "sending" ? (
+                          ) : /* 2. If Waiting */
+                          isWaiting ? (
+                            <ClockIcon />
+                          ) : /* 3. If Active (Sending/Receiving) */
+                          file.type === "sending" ? (
                             <ArrowUpIcon />
                           ) : (
                             <ArrowDownIcon />
@@ -455,21 +375,25 @@ const FileTransfer = () => {
                             <span className="name">{file.name}</span>
                             <span className="size">{file.size}</span>
                           </div>
+
                           <div className="progress-bar-container">
                             <div
-                              className={`progress-bar-fill ${file.type}`}
-                              style={{ width: `${file.progress}%` }}
+                              className={`progress-bar-fill ${file.type} ${isWaiting ? "waiting" : ""}`}
+                              style={{ width: isWaiting ? "100%" : `${file.progress}%` }}
                             ></div>
                           </div>
+
                           <div className="status-row">
                             <span>
                               {isCompleted
                                 ? "Completed"
-                                : file.type === "sending"
-                                  ? "Sending..."
-                                  : "Downloading..."}
+                                : isWaiting
+                                  ? "Waiting in queue..."
+                                  : file.type === "sending"
+                                    ? "Sending..."
+                                    : "Downloading..."}
                             </span>
-                            <span>{file.progress}%</span>
+                            <span>{isWaiting ? "0%" : `${file.progress}%`}</span>
                           </div>
                         </div>
                       </div>
@@ -490,7 +414,6 @@ const FileTransfer = () => {
                     <span className="log-msg">{log.message}</span>
                   </div>
                 ))}
-                {/* LOGIC: Auto-scroll to bottom of logs */}
                 <div ref={logEndRef} />
               </div>
             </div>
@@ -502,6 +425,21 @@ const FileTransfer = () => {
 };
 
 // --- ICONS (Simple SVG components) ---
+const ClockIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="10"></circle>
+    <polyline points="12 6 12 12 16 14"></polyline>
+  </svg>
+);
 
 const UploadCloudIcon = () => (
   <svg
@@ -553,7 +491,6 @@ const ArrowDownIcon = () => (
   </svg>
 );
 
-// Add this with your other icons at the bottom of FileTransfer.jsx
 const CheckIconsent = () => (
   <svg
     width="22"
@@ -568,6 +505,7 @@ const CheckIconsent = () => (
     <polyline points="20 6 9 17 4 12"></polyline>
   </svg>
 );
+
 const CheckIconreceived = () => (
   <svg
     width="22"
