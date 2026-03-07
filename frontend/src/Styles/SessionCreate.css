@@ -207,6 +207,18 @@ body {
   width: 100%;
   margin-bottom: 24px;
 }
+/* Add to ../Styles/SessionCreate.css */
+
+.share-btn.copied {
+  
+  /* border-color: #2ecc71; */
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.share-btn.copied svg {
+  stroke: #fff;
+}
 
 .share-btn {
   flex: 1;

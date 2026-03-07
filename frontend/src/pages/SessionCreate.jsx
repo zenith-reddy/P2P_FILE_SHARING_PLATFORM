@@ -224,9 +224,16 @@ const SessionCreate = () => {
             <button className="share-btn" onClick={shareMail}>
               <MailIcon /> <span>Mail</span>
             </button>
-            <button className="share-btn" onClick={copyToClipboard}>
-              <CopyIcon /> <span>Copy</span>
+            
+            {/* --- Modified Copy Button --- */}
+            <button 
+              className={`share-btn ${isCopied ? "copied" : ""}`} 
+              onClick={copyToClipboard}
+            >
+              {isCopied ? <CheckIcon /> : <CopyIcon />}
+              <span>{isCopied ? "Copied" : "Copy"}</span>
             </button>
+            {/* ---------------------------- */}
           </div>
 
           <div className="card-footer">
@@ -353,6 +360,20 @@ const TelegramIcon = () => (
   >
     <line x1="22" y1="2" x2="11" y2="13"></line>
     <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+  </svg>
+);
+const CheckIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="20 6 9 17 4 12"></polyline>
   </svg>
 );
 
